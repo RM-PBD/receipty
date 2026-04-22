@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Receipty</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Receipty</h1>
+            <p class="subtitle">Drop receipts. Get organized.</p>
+        </header>
+
+        <section class="settings">
+            <div class="setting-row">
+                <label for="sourceDir">Receipt folder</label>
+                <div class="input-with-btn">
+                    <input type="text" id="sourceDir" placeholder="Click Browse to select" spellcheck="false" readonly>
+                    <button class="btn-browse" id="browseSource">Browse</button>
+                </div>
+            </div>
+            <div class="setting-row">
+                <label>Mode</label>
+                <div class="toggle-group">
+                    <button class="toggle active" data-mode="rename">Rename in place</button>
+                    <button class="toggle" data-mode="copy">Copy to folder</button>
+                </div>
+            </div>
+            <div class="setting-row output-row hidden">
+                <label for="outputDir">Output folder</label>
+                <div class="input-with-btn">
+                    <input type="text" id="outputDir" placeholder="Click Browse to select" spellcheck="false" readonly>
+                    <button class="btn-browse" id="browseOutput">Browse</button>
+                </div>
+            </div>
+        </section>
+
+        <section class="drop-zone" id="dropZone">
+            <div class="drop-zone-content">
+                <svg class="drop-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M8 32l8-8 6 6 8-10 10 12"/>
+                    <rect x="4" y="4" width="40" height="40" rx="4"/>
+                    <circle cx="16" cy="16" r="4"/>
+                </svg>
+                <p>Drop receipt images or PDFs here</p>
+                <p class="hint">JPG, PNG, WEBP, PDF</p>
+            </div>
+            <input type="file" id="fileInput" multiple accept="image/jpeg,image/png,image/webp,application/pdf,.jpg,.jpeg,.png,.webp,.pdf" hidden>
+        </section>
+
+        <section class="file-list" id="fileList" hidden></section>
+
+        <div class="actions" id="actions" hidden>
+            <button class="btn btn-clear" id="clearBtn">Clear</button>
+            <button class="btn btn-go" id="goButton">Go</button>
+        </div>
+
+        <section class="results-summary" id="resultsSummary" hidden></section>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
