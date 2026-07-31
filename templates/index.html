@@ -4,13 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Receipty</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="../static/style.css?v=20260731c">
 </head>
 <body>
     <div class="container">
+        <aside class="launch-warning" id="launchWarning" hidden>
+            <strong>Receipty isn’t running.</strong>
+            Start the app, then open <span>http://127.0.0.1:5001</span> to process receipts.
+        </aside>
         <header>
             <h1>Receipty</h1>
-            <p class="subtitle">Drop receipts. Get organized.</p>
+            <p class="subtitle">Preview every filename. Apply only when it looks right.</p>
         </header>
 
         <section class="settings">
@@ -39,7 +43,7 @@
 
         <section class="drop-zone" id="dropZone">
             <div class="drop-zone-content">
-                <svg class="drop-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2">
+                <svg class="drop-icon" width="48" height="48" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M8 32l8-8 6 6 8-10 10 12"/>
                     <rect x="4" y="4" width="40" height="40" rx="4"/>
                     <circle cx="16" cy="16" r="4"/>
@@ -54,12 +58,12 @@
 
         <div class="actions" id="actions" hidden>
             <button class="btn btn-clear" id="clearBtn">Clear</button>
-            <button class="btn btn-go" id="goButton">Go</button>
+            <button class="btn btn-go" id="goButton">Preview names</button>
         </div>
 
         <section class="results-summary" id="resultsSummary" hidden></section>
     </div>
 
-    <script src="/static/app.js"></script>
+    <script src="../static/app.js?v=20260731c"></script>
 </body>
 </html>
