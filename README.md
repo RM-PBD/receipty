@@ -95,7 +95,7 @@ files are never overwritten; a numeric suffix is added when a filename already e
 
 ### Optional settings
 
-- Set `RECEIPTY_MODEL` to use a different Anthropic model ID.
+- Set `RECEIPTY_MODEL` to override the default `claude-sonnet-5` model ID.
 - Set `RECEIPTY_PORT` to run the local app on a port other than `5001`.
 - Set `FLASK_DEBUG=1` only when developing the app.
 

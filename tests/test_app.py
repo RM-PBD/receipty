@@ -18,6 +18,15 @@ class AppRouteTests(unittest.TestCase):
         self.assertIn(b"width=\"48\" height=\"48\"", response.data)
         self.assertIn(b"Receipty isn\xe2\x80\x99t running", response.data)
 
+    @patch.dict("os.environ", {}, clear=True)
+    def test_health_reports_missing_api_key_without_exposing_secrets(self):
+        response = self.client.get("/api/health")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.get_json(),
+            {"status": "ok", "api_key_configured": False, "service_version": "3"},
+        )
+
     @patch("app.preview_receipt")
     def test_analyze_returns_preview(self, preview):
         preview.return_value = {

@@ -1,7 +1,9 @@
 import hashlib
+import os
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
 from receipty import (
@@ -59,6 +61,33 @@ class ReceiptDataTests(unittest.TestCase):
     def test_accepts_reviewed_standard_filename(self):
         name = "3_7_24_Server_Boosts_Discord_54.90_USD.pdf"
         self.assertEqual(validate_proposed_filename(name, ".pdf"), name)
+
+    @patch.dict(os.environ, {}, clear=True)
+    def test_analyze_explains_missing_api_key(self):
+        from receipty import analyze_receipt
+
+        with self.assertRaisesRegex(ReceiptValidationError, "API key is not available"):
+            analyze_receipt(b"receipt", "receipt.pdf")
+
+    @patch.dict(os.environ, {"ANTHROPIC_API_KEY": "test-key"}, clear=True)
+    @patch("receipty.image_to_base64", return_value=("image/jpeg", "encoded"))
+    @patch("receipty.anthropic.Anthropic")
+    def test_analyze_omits_deprecated_temperature(self, anthropic_client, _image):
+        from receipty import analyze_receipt
+
+        messages = anthropic_client.return_value.messages
+        messages.create.return_value = SimpleNamespace(
+            content=[SimpleNamespace(
+                type="text",
+                text='{"date":"1/2/26","what":"Coffee","business":"Pret",'
+                     '"total":"3.50","currency":"GBP"}',
+            )]
+        )
+
+        result = analyze_receipt(b"receipt", "receipt.jpg")
+
+        self.assertEqual(result["business"], "Pret")
+        self.assertNotIn("temperature", messages.create.call_args.kwargs)
 
 
 class FileOperationTests(unittest.TestCase):
