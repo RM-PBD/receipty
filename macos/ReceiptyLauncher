@@ -9,9 +9,8 @@ readonly python_executable="${project_directory}/venv/bin/python"
 readonly app_file="${project_directory}/app.py"
 readonly log_file="${project_directory}/receipty-launcher.log"
 readonly app_url="http://127.0.0.1:5001"
-readonly launch_label="local.receipty.server"
-readonly launch_domain="gui/$(/usr/bin/id -u)"
-readonly launch_plist="${bundle_directory}/Contents/Resources/LaunchAgent.plist"
+readonly health_url="${app_url}/api/health"
+readonly expected_service_version="3"
 
 show_error() {
     local message="$1"
@@ -23,18 +22,15 @@ show_error() {
 }
 
 if [[ "${1:-}" == "--serve" ]]; then
-    # Finder apps do not inherit variables exported in the user's shell setup.
-    # Receipty's documented setup stores ANTHROPIC_API_KEY in this file.
-    if [[ -f "${HOME}/.zshrc" ]]; then
-        set +u
-        source "${HOME}/.zshrc"
-        set -u
-    fi
-    cd "$project_directory" || exit 1
-    exec "$python_executable" "$app_file"
+    # Run as an interactive login shell so Finder launches receive variables
+    # configured in both .zprofile and .zshrc.
+    exec /bin/zsh -lic 'cd "$1" && exec "$2" "$3"' \
+        receipty "$project_directory" "$python_executable" "$app_file"
 fi
 
-if /usr/bin/curl --silent --fail --max-time 1 "$app_url" >/dev/null 2>&1; then
+health_response=$(/usr/bin/curl --silent --fail --max-time 1 "$health_url" 2>/dev/null || true)
+if [[ "$health_response" == *'"api_key_configured":true'* \
+    && "$health_response" == *"\"service_version\":\"${expected_service_version}\""* ]]; then
     /usr/bin/open "$app_url"
     exit 0
 fi
@@ -49,16 +45,31 @@ if [[ ! -f "$app_file" ]]; then
     exit 1
 fi
 
-/bin/launchctl bootout "${launch_domain}/${launch_label}" >/dev/null 2>&1 || true
-if ! /bin/launchctl bootstrap "$launch_domain" "$launch_plist"; then
-    show_error "macOS could not register Receipty's local service. Details may be available in receipty-launcher.log."
-    exit 1
-fi
+# A launcher from an earlier Receipty version may have left an unmanaged server
+# running. Stop it only after verifying both its interpreter and app path.
+listener_pids=$(/usr/sbin/lsof -nP -t -iTCP:5001 -sTCP:LISTEN 2>/dev/null || true)
+for listener_pid in ${(f)listener_pids}; do
+    process_command=$(/bin/ps -p "$listener_pid" -o command= 2>/dev/null || true)
+    if [[ "$process_command" == *"$app_file"* ]]; then
+        /bin/kill "$listener_pid" 2>/dev/null || true
+    fi
+done
+
+/usr/bin/nohup /bin/zsh -lic 'cd "$1" && exec "$2" "$3"' \
+    receipty "$project_directory" "$python_executable" "$app_file" \
+    >>"$log_file" 2>&1 </dev/null &
+server_pid=$!
+disown "$server_pid"
 
 for attempt in {1..80}; do
-    if /usr/bin/curl --silent --fail --max-time 1 "$app_url" >/dev/null 2>&1; then
+    health_response=$(/usr/bin/curl --silent --fail --max-time 1 "$health_url" 2>/dev/null || true)
+    if [[ "$health_response" == *'"api_key_configured":true'* \
+        && "$health_response" == *"\"service_version\":\"${expected_service_version}\""* ]]; then
         /usr/bin/open "$app_url"
         exit 0
+    fi
+    if ! /bin/kill -0 "$server_pid" 2>/dev/null; then
+        break
     fi
     /bin/sleep 0.25
 done

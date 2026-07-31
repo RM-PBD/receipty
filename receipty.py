@@ -16,7 +16,7 @@ import fitz  # PyMuPDF
 from PIL import Image, ImageOps
 
 
-MODEL = os.environ.get("RECEIPTY_MODEL", "claude-sonnet-4-20250514")
+MODEL = os.environ.get("RECEIPTY_MODEL", "claude-sonnet-5")
 SUPPORTED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".pdf"}
 MAX_IMAGE_EDGE = 3200
 FILE_OPERATION_LOCK = threading.Lock()
@@ -173,6 +173,12 @@ def analyze_receipt(file_bytes: bytes, filename: str) -> dict:
     if not file_bytes:
         raise ReceiptValidationError("The receipt file is empty")
 
+    if not os.environ.get("ANTHROPIC_API_KEY"):
+        raise ReceiptValidationError(
+            "Anthropic API key is not available. Add ANTHROPIC_API_KEY to ~/.zshrc, "
+            "then close and reopen Receipty."
+        )
+
     extension = Path(filename).suffix.lower()
     if extension not in SUPPORTED_EXTENSIONS:
         raise ReceiptValidationError(f"Unsupported file type: {extension or 'unknown'}")
@@ -195,7 +201,6 @@ def analyze_receipt(file_bytes: bytes, filename: str) -> dict:
     response = client.messages.create(
         model=MODEL,
         max_tokens=300,
-        temperature=0,
         messages=[{"role": "user", "content": content}],
     )
     raw = "".join(block.text for block in response.content if getattr(block, "type", None) == "text")

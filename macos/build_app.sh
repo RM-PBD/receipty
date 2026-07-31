@@ -27,19 +27,6 @@ fi
     "$icon_source" "$app_bundle/Contents/Resources/Receipty.icns"
 /bin/cp "$source_directory/Info.plist" "$app_bundle/Contents/Info.plist"
 /bin/cp "$source_directory/ReceiptyLauncher" "$app_bundle/Contents/MacOS/Receipty"
-/bin/cp "$source_directory/LaunchAgent.plist" "$app_bundle/Contents/Resources/LaunchAgent.plist"
-/usr/bin/plutil -insert ProgramArguments.0 -string \
-    "$app_bundle/Contents/MacOS/Receipty" \
-    "$app_bundle/Contents/Resources/LaunchAgent.plist"
-/usr/bin/plutil -replace StandardOutPath -string \
-    "$project_directory/receipty-launcher.log" \
-    "$app_bundle/Contents/Resources/LaunchAgent.plist"
-/usr/bin/plutil -replace StandardErrorPath -string \
-    "$project_directory/receipty-launcher.log" \
-    "$app_bundle/Contents/Resources/LaunchAgent.plist"
-/usr/bin/plutil -replace WorkingDirectory -string \
-    "$project_directory" \
-    "$app_bundle/Contents/Resources/LaunchAgent.plist"
 /bin/chmod +x "$app_bundle/Contents/MacOS/Receipty"
 /usr/bin/codesign --force --deep --sign - "$app_bundle"
 

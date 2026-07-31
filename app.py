@@ -9,6 +9,7 @@ from receipty import commit_receipt, preview_receipt, process_receipt
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024
+SERVICE_VERSION = "3"
 
 
 @app.errorhandler(RequestEntityTooLarge)
@@ -19,6 +20,15 @@ def file_too_large(_error):
 @app.route("/")
 def index():
     return render_template("index.html")
+
+
+@app.route("/api/health")
+def health():
+    return jsonify({
+        "status": "ok",
+        "api_key_configured": bool(os.environ.get("ANTHROPIC_API_KEY")),
+        "service_version": SERVICE_VERSION,
+    })
 
 
 @app.route("/api/analyze", methods=["POST"])
