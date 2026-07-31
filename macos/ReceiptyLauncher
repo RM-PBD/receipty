@@ -1,0 +1,67 @@
+#!/bin/zsh
+
+set -u
+
+readonly executable_directory="${0:A:h}"
+readonly bundle_directory="${executable_directory:h:h}"
+readonly project_directory="${bundle_directory:h}"
+readonly python_executable="${project_directory}/venv/bin/python"
+readonly app_file="${project_directory}/app.py"
+readonly log_file="${project_directory}/receipty-launcher.log"
+readonly app_url="http://127.0.0.1:5001"
+readonly launch_label="local.receipty.server"
+readonly launch_domain="gui/$(/usr/bin/id -u)"
+readonly launch_plist="${bundle_directory}/Contents/Resources/LaunchAgent.plist"
+
+show_error() {
+    local message="$1"
+    /usr/bin/osascript \
+        -e 'on run argv' \
+        -e 'display alert "Receipty could not start" message (item 1 of argv) as critical' \
+        -e 'end run' \
+        -- "$message"
+}
+
+if [[ "${1:-}" == "--serve" ]]; then
+    # Finder apps do not inherit variables exported in the user's shell setup.
+    # Receipty's documented setup stores ANTHROPIC_API_KEY in this file.
+    if [[ -f "${HOME}/.zshrc" ]]; then
+        set +u
+        source "${HOME}/.zshrc"
+        set -u
+    fi
+    cd "$project_directory" || exit 1
+    exec "$python_executable" "$app_file"
+fi
+
+if /usr/bin/curl --silent --fail --max-time 1 "$app_url" >/dev/null 2>&1; then
+    /usr/bin/open "$app_url"
+    exit 0
+fi
+
+if [[ ! -x "$python_executable" ]]; then
+    show_error "The Python environment is missing. Keep Receipty.app inside the Receipty project folder and reinstall the project dependencies."
+    exit 1
+fi
+
+if [[ ! -f "$app_file" ]]; then
+    show_error "app.py was not found. Keep Receipty.app inside the Receipty project folder."
+    exit 1
+fi
+
+/bin/launchctl bootout "${launch_domain}/${launch_label}" >/dev/null 2>&1 || true
+if ! /bin/launchctl bootstrap "$launch_domain" "$launch_plist"; then
+    show_error "macOS could not register Receipty's local service. Details may be available in receipty-launcher.log."
+    exit 1
+fi
+
+for attempt in {1..80}; do
+    if /usr/bin/curl --silent --fail --max-time 1 "$app_url" >/dev/null 2>&1; then
+        /usr/bin/open "$app_url"
+        exit 0
+    fi
+    /bin/sleep 0.25
+done
+
+show_error "Receipty did not become ready. Details were saved to receipty-launcher.log in the project folder."
+exit 1
